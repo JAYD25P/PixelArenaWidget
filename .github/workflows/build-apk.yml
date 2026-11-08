@@ -52,7 +52,7 @@ jobs:
                   targetCompatibility = JavaVersion.VERSION_17
               }
           """)
-          s = s.replace("\\n}", """
+          s = s.replace("\n}", """
               kotlinOptions {
                   jvmTarget = "17"
               }
