@@ -20,13 +20,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Verify and extract Android source
+      - name: Verify, extract and patch Android source
         run: |
+          set -euo pipefail
           test -s PixelArena-Android-Source.zip
           mkdir -p build-src
           unzip -q PixelArena-Android-Source.zip -d build-src
-          test -f build-src/pixelarena-project/settings.gradle.kts
-          test -f build-src/pixelarena-project/app/build.gradle.kts
+          PROJECT=build-src/pixelarena-project
+          test -f "$PROJECT/settings.gradle.kts"
+          test -f "$PROJECT/app/build.gradle.kts"
+          # Android app-widget description must reference a string resource, not raw text.
+          mkdir -p "$PROJECT/app/src/main/res/values"
+          cat > "$PROJECT/app/src/main/res/values/strings.xml" <<'EOF'
+          <resources>
+              <string name="app_name">Pixel Arena</string>
+              <string name="widget_description">Autonomous pixel-art battles between Hero and Skullwolf</string>
+          </resources>
+          EOF
+          sed -i 's/android:description="Autonomous pixel-art battles between Hero and Skullwolf"/android:description="@string\/widget_description"/' "$PROJECT/app/src/main/res/xml/arena_widget_info.xml"
 
       - name: Set up Java
         uses: actions/setup-java@v4
