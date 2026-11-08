@@ -1,0 +1,51 @@
+name: Build Pixel Arena APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'PixelArena-Android-Source.zip'
+      - '.github/workflows/build-apk.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Verify source archive
+        run: |
+          test -f PixelArena-Android-Source.zip || {
+            echo "Upload PixelArena-Android-Source.zip to the repository root first."
+            exit 1
+          }
+      - name: Extract Android project
+        run: |
+          mkdir -p build-src
+          unzip -q PixelArena-Android-Source.zip -d build-src
+          test -f build-src/pixelarena-project/gradlew || {
+            echo "Gradle wrapper is missing from the source archive."
+            exit 1
+          }
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Build debug APK
+        working-directory: build-src/pixelarena-project
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: PixelArena-debug-apk
+          path: build-src/pixelarena-project/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
