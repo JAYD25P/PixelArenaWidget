@@ -16,32 +16,33 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Verify source archive
+
+      - name: Verify and extract Android source
         run: |
-          test -f PixelArena-Android-Source.zip || {
-            echo "Upload PixelArena-Android-Source.zip to the repository root first."
-            exit 1
-          }
-      - name: Extract Android project
-        run: |
+          test -s PixelArena-Android-Source.zip
           mkdir -p build-src
           unzip -q PixelArena-Android-Source.zip -d build-src
-          test -f build-src/pixelarena-project/gradlew || {
-            echo "Gradle wrapper is missing from the source archive."
-            exit 1
-          }
+          test -f build-src/pixelarena-project/settings.gradle.kts
+          test -f build-src/pixelarena-project/app/build.gradle.kts
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+
       - name: Build debug APK
         working-directory: build-src/pixelarena-project
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
+        run: gradle assembleDebug --stacktrace
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
