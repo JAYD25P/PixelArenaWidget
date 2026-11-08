@@ -38,6 +38,28 @@ jobs:
           </resources>
           EOF
           sed -i 's/android:description="Autonomous pixel-art battles between Hero and Skullwolf"/android:description="@string\/widget_description"/' "$PROJECT/app/src/main/res/xml/arena_widget_info.xml"
+          # Keep Java and Kotlin bytecode targets aligned (Java defaults to 1.8).
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("build-src/pixelarena-project/app/build.gradle.kts")
+          s = p.read_text()
+          marker = "    defaultConfig { applicationId = \"com.jaydeep.pixelarena\"; minSdk = 26; targetSdk = 35; versionCode = 1; versionName = \"1.0\" }"
+          if marker not in s:
+              raise SystemExit("Could not locate defaultConfig to apply JVM compatibility fix")
+          s = s.replace(marker, marker + """
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+          """)
+          s = s.replace("\\n}", """
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
+          }
+          """)
+          p.write_text(s)
+          PY
 
       - name: Set up Java
         uses: actions/setup-java@v4
